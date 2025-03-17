@@ -69,6 +69,8 @@ q4
 
 \noindent Question 5. Compare the trends in sales from the 5 states with the highest price increases to those with the lowest price increases. 
 
+The 5 states with the highest increase in cigarette prices have a sharp decline over time in the average number of packs sold. Meanwhile, the 5 states with the lowest price increase for cigarettes have a more stable average number of packs sold over time, although there is still a steady declune. Both datasets have a maximum average number of packs sold around 1980, and then the averages drop over time. All 5 of the states with the highest price increase sell less packs per capita than all 5 of the low price increase states in later years, starting around 2015.
+
 \newpage
 # Estimate ATEs
 \noindent Question 6. Focusing only on the time period from 1970 to 1990, regress log sales on log prices to estimate the price elasticity of demand over that period. Interpret your results.

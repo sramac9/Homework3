@@ -13,23 +13,29 @@ final.data <- readRDS("data/output/TaxBurden_Data.rds")
 final.data <- final.data %>%
   arrange(state, Year) %>%
   group_by(state) %>%
-  mutate(tax_change = ifelse(lag(tax_dollar) != tax_dollar, 1, 0)) %>%
-  ungroup()
+  mutate(tax_change = tax_state - lag(tax_state),
+  tax_change_d = ifelse(tax_change==0,0,1),
+  price_cpi_2012 = cost_per_pack*(cpi_2012/index),
+  total_tax_cpi_2012=tax_dollar*(cpi_2012/index),
+  ln_tax_2012=log(total_tax_cpi_2012),
+  ln_sales=log(sales_per_capita),
+  ln_price_2012=log(price_cpi_2012))
+ 
 
-tax_change_data <- final.data %>%
+tax_change_d <- final.data %>%
   filter(Year >= 1970 & Year <= 1985)
 
-tax_change_proportion <- tax_change_data %>%
+tax_change_proportion <- tax_change_d %>%
   group_by(Year) %>%
   summarize(proportion_with_change = mean(tax_change, na.rm = TRUE))
 
 q1 <- ggplot(tax_change_proportion, aes(x = Year, y = proportion_with_change)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "#96eb87") +
   labs(title = "Proportion of States that Changed Cigarette Tax, 1970-1985",
        x = "Year",
        y = "Proportion with Tax Change") +
   theme_minimal()
-  #theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ 
 
 # Question 2: Average Tax and Cigarette Price
 avg_tax_price_data <- final.data %>%
@@ -39,98 +45,79 @@ avg_tax_price_data <- final.data %>%
     avg_price = mean(cost_per_pack, na.rm = TRUE))
 
 q2 <- ggplot(avg_tax_price_data, aes(x = Year)) +
-  geom_line(aes(y = avg_tax), color = "blue", size = 1.2, linetype = "solid") +
-  geom_line(aes(y = avg_price), color = "red", size = 1.2, linetype = "solid") +
+  geom_line(aes(y = avg_tax, color = "Average Tax"), size = 1.2, linetype = "solid") +
+  geom_line(aes(y = avg_price, color = "Average Price"), size = 1.2, linetype = "solid") +
   scale_y_continuous(
     name = "Average Tax (2012 Dollars)",
-    sec.axis = sec_axis(~ ., name = "Average Price (2012 Dollars)")) +
+    sec.axis = sec_axis(~ ., name = "Average Price, in 2012 Dollars")) +
   labs(
-    title = "Average Cigarette Tax and Price (1970 - 2018)",
-    x = "Year") +
+    title = "Average Cigarette Tax and Price, 1970-2018",
+    x = "Year",
+    color = "Legend") +  # Adds a legend title
   theme_minimal(base_size = 14) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
-    axis.title.x = element_text(size = 14, face = "bold"),
-    axis.title.y = element_text(size = 14, face = "bold"),
-    axis.title.y.right = element_text(size = 14, face = "bold")) +
-  scale_color_manual(values = c("blue", "red"))
+    axis.title.x = element_text(size = 11, face = "bold"),
+    axis.title.y = element_text(size = 11, face = "bold"),
+    axis.title.y.right = element_text(size = 11, face = "bold")) +
+  scale_color_manual(
+    name = "Legend",  # Legend title
+    values = c("Average Tax" = "#00aaff", "Average Price" = "#ffae00")
+  )
 
 # Question 3: Highest Cigarette Prices
-price_changes <- final.data %>%
-  filter(Year %in% c(1970, 2018)) %>%
-  group_by(state, Year) %>%
-  summarize(cost_per_pack = mean(cost_per_pack, na.rm = TRUE), .groups = 'drop')
+cig.data.change <- final.data %>% ungroup() %>%
+  filter(Year==1970) %>% 
+  select(state, price_1970 = price_cpi_2012) %>%
+  left_join(final.data %>% 
+  filter(Year==2018) %>% 
+  select(state, price_2018 = price_cpi_2012),
+          by=c('state')) %>% 
+  mutate(price_change = price_2018-price_1970)
 
-price_changes_wide <- price_changes %>%
-  pivot_wider(names_from = Year, values_from = cost_per_pack)
+high.change <- cig.data.change %>% slice_max(price_change, n=5) %>% mutate(change_group="high")
+low.change <- cig.data.change %>% slice_min(price_change, n=5) %>% mutate(change_group="low")
+change.group <- rbind(high.change, low.change)
 
-price_changes_wide <- price_changes_wide %>%
-  mutate(price_change = `2018` - `1970`)
+top.bottom.price <- final.data %>% ungroup() %>%
+  inner_join(change.group %>% select(state, change_group),
+             by=c("state"))
 
-top5_states <- price_changes_wide %>%
-  arrange(desc(price_change)) %>%
-  slice_head(n = 5) %>%
-  pull(state)
-
-top_5_data <- final.data %>%
-  filter(state %in% top5_states) %>%
-  group_by(state, Year) %>%
-  summarize(avg_sales_per_capita = mean(sales_per_capita, na.rm = TRUE), .groups = 'drop')
-
-q3 <- ggplot(top_5_data, aes(x = Year, y = avg_sales_per_capita, color = state, group = state)) +
-  geom_line(size = 1.2) +
+q3 <- top.bottom.price %>% filter(change_group=="high") %>%
+ggplot(aes(x = Year, y = sales_per_capita, color = state, group = state)) +
+  stat_summary(fun="mean",geom="line")+ 
   labs(
-    title = "Average Cigarette Packs Sold per Capita for Top 5 States with Highest Price Increases (1970-2018)",
+    title = "Average Packs Sold per Capita for 5 Highest Price-Increasing States",
     x = "Year",
-    y = "Average Packs Sold per Capita"
+    y = "Average Packs Sold (per Capita)"
   ) +
   scale_color_brewer(palette = "Set1", name = "State") +
   theme_minimal(base_size = 14) +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
-    axis.title.x = element_text(size = 14, face = "bold"),
-    axis.title.y = element_text(size = 14, face = "bold"))
+    #axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.title.x = element_text(size = 11, face = "bold"),
+    axis.title.y = element_text(size = 11, face = "bold"))
+q3
 
 # Question 4: Lowest Cigarette Prices
-price_changes <- final.data %>%
-  filter(Year %in% c(1970, 2018)) %>%
-  group_by(state, Year) %>%
-  summarize(cost_per_pack = mean(cost_per_pack, na.rm = TRUE), .groups = 'drop')
-
-price_changes <- final.data %>%
-  filter(Year %in% c(1970, 2018)) %>%
-  group_by(state, Year) %>%
-  summarize(cost_per_pack = mean(cost_per_pack, na.rm = TRUE), .groups = 'drop')
-
-price_changes_wide <- price_changes_wide %>%
-  mutate(price_change = `2018` - `1970`)
-
-bottom5_states <- price_changes_wide %>%
-  arrange(price_change) %>%
-  slice_head(n = 5) %>%
-  pull(state)
-
-bottom_5_data <- final.data %>%
-  filter(state %in% bottom5_states) %>%
-  group_by(state, Year) %>%
-  summarize(avg_sales_per_capita = mean(sales_per_capita, na.rm = TRUE), .groups = 'drop')
-
-q4 <- ggplot(bottom_5_data, aes(x = Year, y = avg_sales_per_capita, color = state, group = state)) +
-  geom_line(size = 1.2) +
+q4 <- top.bottom.price %>% filter(change_group=="low") %>%
+ggplot(aes(x = Year, y = sales_per_capita, color = state, group = state)) +
+  stat_summary(fun="mean",geom="line")+ 
   labs(
-    title = "Average Number of Packs Sold per Capita for Bottom 5 States with Lowest Price Increases (1970-2018)",
+    title = "Average Packs Sold per Capita for 5 Lowest Price-Increasing States",
     x = "Year",
-    y = "Average Packs Sold per Capita") +
+    y = "Average Packs Sold (per Capita)"
+  ) +
   scale_color_brewer(palette = "Set1", name = "State") +
   theme_minimal(base_size = 14) +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
-    axis.title.x = element_text(size = 14, face = "bold"),
-    axis.title.y = element_text(size = 14, face = "bold"))
-
+    #axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.title.x = element_text(size = 11, face = "bold"),
+    axis.title.y = element_text(size = 11, face = "bold"))
+q4
 # Question 5: written
 # Question 6: Price Elasticity of Demand
 data_1970_1990 <- final.data %>%
