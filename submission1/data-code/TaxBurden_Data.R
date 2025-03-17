@@ -13,8 +13,8 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
 
 
-cig.data <- read_csv("data/input/CDC_1970-2018.csv", col_names = TRUE)
-cpi.data <- read_xlsx("data/input/CPI_1913_2019.xlsx", skip = 11)
+cig.data <- read_csv("data/input/CDC_1970-2019.csv", col_names = TRUE)
+cpi.data <- read_xlsx("data/input/CPI_1970_2018.xlsx", skip = 11)
 
 
 # Clean tobacco data --------------------------------------------------------------
@@ -34,7 +34,7 @@ cig.data <- cig.data %>%
          measure)
          
 final.data <- pivot_wider(cig.data, 
-                         id_cols = c("state","Year","measure"),
+                         id_cols = c("state","Year"),
                          names_from = "measure",
                          values_from = "value") %>%
   arrange(state, Year)
