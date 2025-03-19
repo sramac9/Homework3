@@ -1,7 +1,7 @@
 # Meta --------------------------------------------------------------------
 # Author:        Sammy Ramacher
 # Date Created:  3/15/2025
-# Date Edited:   3/15/2025
+# Date Edited:   3/17/2025
 # Homework 3-1
 
 if (!require("pacman")) install.packages("pacman")
@@ -9,7 +9,7 @@ pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table
 
 final.data <- readRDS("data/output/TaxBurden_Data.rds")
 
-# Question 1: Change in Cigarette Tax 
+# Question 1 
 final.data <- final.data %>%
   arrange(state, Year) %>%
   group_by(state) %>%
@@ -37,7 +37,7 @@ q1 <- ggplot(tax_change_proportion, aes(x = Year, y = proportion_with_change)) +
   theme_minimal()
  
 
-# Question 2: Average Tax and Cigarette Price
+# Question 2
 avg_tax_price_data <- final.data %>%
   group_by(Year) %>%
   summarize(
@@ -66,7 +66,7 @@ q2 <- ggplot(avg_tax_price_data, aes(x = Year)) +
     values = c("Average Tax" = "#00aaff", "Average Price" = "#ffae00")
   )
 
-# Question 3: Highest Cigarette Prices
+# Question 3
 cig.data.change <- final.data %>% ungroup() %>%
   filter(Year==1970) %>% 
   select(state, price_1970 = price_cpi_2012) %>%
@@ -95,13 +95,12 @@ ggplot(aes(x = Year, y = sales_per_capita, color = state, group = state)) +
   scale_color_brewer(palette = "Set1", name = "State") +
   theme_minimal(base_size = 14) +
   theme(
-    #axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
     axis.title.x = element_text(size = 11, face = "bold"),
     axis.title.y = element_text(size = 11, face = "bold"))
 q3
 
-# Question 4: Lowest Cigarette Prices
+# Question 4
 q4 <- top.bottom.price %>% filter(change_group=="low") %>%
 ggplot(aes(x = Year, y = sales_per_capita, color = state, group = state)) +
   stat_summary(fun="mean",geom="line")+ 
@@ -113,13 +112,13 @@ ggplot(aes(x = Year, y = sales_per_capita, color = state, group = state)) +
   scale_color_brewer(palette = "Set1", name = "State") +
   theme_minimal(base_size = 14) +
   theme(
-    #axis.text.x = element_text(angle = 45, hjust = 1),
     plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
     axis.title.x = element_text(size = 11, face = "bold"),
     axis.title.y = element_text(size = 11, face = "bold"))
 q4
-# Question 5: written
-# Question 6: Price Elasticity of Demand
+
+# Question 5: written (or could include graph if wanted)
+# Question 6
 data_1970_1990 <- final.data %>%
   filter(Year >= 1970 & Year <= 1990) %>%
   drop_na(cost_per_pack, sales_per_capita)
@@ -132,7 +131,7 @@ data_1970_1990 <- data_1970_1990 %>%
 q6 <- lm(log_sales ~ log_price, data = data_1970_1990)
 summary(q6)
 
-# Question 7: Regression with Tax as an Instrument
+# Question 7
 if (!require("AER")) install.packages("AER")
 library(AER)
 
@@ -149,15 +148,15 @@ data_1970_1990 <- data_1970_1990 %>%
 q7 <- ivreg(log_sales ~ log_price | log_tax, data = data_1970_1990)
 summary(q7)
 
-# Question 8: First Stage & Reduced Form
+# Question 8
 first_stage_8 <- lm(log_price ~ log_tax, data = data_1970_1990)
 first_stage_8
 
 reduced_form_8 <- lm(log_sales ~ log_tax, data = data_1970_1990)
 summary(reduced_form_8)
 
-# Question 9: Repeat for 1991-2015
-## a) Price Elasticity for Demand
+# Question 9 (a)
+
 data_1991_2015 <- final.data %>%
   filter(Year >= 1991 & Year <= 2015) %>%
   drop_na(cost_per_pack, sales_per_capita)
@@ -170,7 +169,7 @@ data_1991_2015 <- data_1991_2015 %>%
 q9a <- lm(log_sales ~ log_price, data = data_1991_2015)
 summary(q9a)
 
-## b) Regression with Tax as an Instrument
+#(b)
 data_1991_2015 <- final.data %>%
   filter(Year >= 1991 & Year <= 2015) %>%
   drop_na(cost_per_pack, sales_per_capita, tax_dollar)
@@ -184,7 +183,7 @@ data_1991_2015 <- data_1991_2015 %>%
 q9b <- ivreg(log_sales ~ log_price | log_tax, data = data_1991_2015)
 summary(q9b)
 
-## c) First Stage & Reduced Form
+#(c)
 first_stage_9 <- lm(log_price ~ log_tax, data = data_1991_2015)
 summary(first_stage_9)
 

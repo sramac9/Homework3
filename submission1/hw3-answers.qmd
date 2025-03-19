@@ -78,7 +78,7 @@ The 5 states with the highest increase in cigarette prices have a sharp decline 
 #| echo=FALSE, fig.show='hold'
 summary(q6)
 ```
-\noindent Interpretation of results: 
+\noindent xxx 
 
 \vspace{1cm}
 
@@ -87,16 +87,15 @@ summary(q6)
 #| echo=FALSE, fig.show='hold'
 summary(q7)
 ```
-\noindent Interpretation of results: 
+\noindent xxx
 
 \newpage
 \noindent Question 8. Show the first stage and reduced-form results from the instrument.
 ```{r}
 #| echo=FALSE, fig.show='hold'
-first_stage_8 <- lm(log_price ~ log_tax, data = data_1970_1990)
+
 first_stage_8
 
-reduced_form_8 <- lm(log_sales ~ log_tax, data = data_1970_1990)
 summary(reduced_form_8)
 ```
 
@@ -117,4 +116,5 @@ summary(reduced_form_9)
 \newpage
 \noindent Question 10. Compare your elasticity estimates from 1970-1990 versus those from 1991-2015. Are they different? If so, why?
 
-Interpretation of results: 
+
+xxx
