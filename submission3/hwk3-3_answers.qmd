@@ -1,0 +1,189 @@
+---
+title: "Homework 3"
+subtitle: "Research in Health Economics, Spring 2025"
+author: "Sammy Ramacher"
+format:
+    pdf: 
+        output-file: "RamacherS_hwk3-3"
+        output-ext: "pdf"
+        header-includes: 
+            - \usepackage{float}
+            - \floatplacement{table}{H}
+knitr:
+    opts_chunk:
+        warning: false
+
+---
+```{r}
+#| include: false
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
+               scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
+               ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
+               kableExtra, broom)
+
+            
+```
+
+```{r}
+#| include: false
+#| eval: true
+
+final.data <- readRDS("/Users/sammyram/Documents/Github/Homework3/data/output/TaxBurden_Data.rds")
+load("/Users/sammyram/Documents/Github/Homework3/submission1/hwk3_workspace.Rdata")
+```
+The GitHub repository for this work is available [here](https://https://github.com/sramac9/Homework3).
+
+
+\newpage
+# Summarize the Data
+
+\noindent Question 1. Present a bar graph showing the proportion of states with a change in their cigarette tax in each year from 1970 to 1985.
+
+```{r}
+#| echo=FALSE, fig.show='hold'
+q1
+```
+\newpage
+
+\noindent Question 2. Plot on a single graph the average tax (in 2012 dollars) on cigarettes and the average price of a pack of cigarettes from 1970 to 2018.
+```{r}
+#| echo=FALSE, fig.show='hold'
+q2
+```
+\newpage
+
+\noindent Question 3. Identify the 5 states with the highest increases in cigarette prices (in dollars) over the time period. Plot the average number of packs sold per capita for those states from 1970 to 2018.
+```{r}
+#| echo=FALSE, fig.show='hold'
+q3
+```
+\newpage
+
+\noindent Question 4. Identify the 5 states with the lowest increases in cigarette prices over the time period. Plot the average number of packs sold per capita for those states from 1970 to 2018.
+```{r}
+#| echo=FALSE, fig.show='hold'
+q4
+```
+\newpage
+
+\noindent Question 5. Compare the trends in sales from the 5 states with the highest price increases to those with the lowest price increases. 
+
+
+The 5 states with the highest increase in cigarette prices have a sharp decline over time in the average number of packs sold. Meanwhile, the 5 states with the lowest price increase for cigarettes have a more stable average number of packs sold over time, although there is still a steady declune. Both datasets have a maximum average number of packs sold around 1980, and then the averages drop over time. All 5 of the states with the highest price increase sell less packs per capita than all 5 of the low price increase states in later years, starting around 2015.
+
+\newpage
+# Estimate ATEs
+\noindent Question 6. Focusing only on the time period from 1970 to 1990, regress log sales on log prices to estimate the price elasticity of demand over that period. Interpret your results.
+```{r}
+#| echo=FALSE, fig.show='hold'
+q6_tidy <- tidy(q6)
+q6_tidy <- q6_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "ln_price_2012" = "2012 Price (log)",
+  ))
+
+q6_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "Log Sales on Log Price Regression Results")
+```
+\noindent These results indicate that a 1% increase in cigarette price leads to a 0.172% decrease in sales. Because the absolute value of the coefficient for price is less than 1, the demand for cigarettes is relatively inelastic.
+
+
+\vspace{1cm}
+\newpage
+\noindent Question 7. Again limiting to 1970 to 1990, regress log sales on log prices using the total (federal and state) cigarette tax (in dollars) as an instrument for log prices. Interpret your results and compare your estimates to those without an instrument. Are they different? If so, why?
+```{r}
+#| echo=FALSE, fig.show='hold'
+
+q7_tidy <- tidy(q7)
+q7_tidy <- q7_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "fit_ln_price_2012" = "2012 Price (log)",
+  ))
+q7_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "Log Sales on Log Price Regression with Instrument Results")
+```
+\noindent These results indicate that a 1% increase in price leads to a 0.763% decrease in sales. This is different than the first regression that does not have the instrument. The price elasticity for the regression with the instrument is much larger, making the demand for cigarettes more elastic when controlling for endogeneity. Therefore, the first model is likely underestimating the true price elasticity of demand.
+
+\newpage
+\noindent Question 8. Show the first stage and reduced-form results from the instrument.
+```{r}
+#| echo=FALSE, fig.show='hold'
+
+q8first.stage_tidy <- tidy(q8first.stage)
+q8first.stage_tidy <- q8first.stage_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "ln_tax_2012" = "2012 Tax (log)",
+  ))
+q8first.stage_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "First Stage Results from Instrument")
+
+q8reduced.form_tidy <- tidy(q8reduced.form)
+q8reduced.form_tidy <- q8reduced.form_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "ln_tax_2012" = "2012 Tax (log)",
+  ))
+q8reduced.form_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "Reduced-Form Results from Instrument")
+
+```
+
+\newpage
+\noindent Question 9. Repeat questions 6-8 focusing on the period from 1991 to 2015.
+```{r}
+#| echo=FALSE, fig.show='hold'
+
+q9a_tidy <- tidy(q9a)
+q9a_tidy <- q9a_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "ln_price_2012" = "2012 Price (log)",
+  ))
+q9a_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "Log Sales on Log Price Regression Results: 1991-2015")
+
+q9b_tidy <- tidy(q9b)
+q9b_tidy <- q9b_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "fit_ln_price_2012" = "2012 Price (log)",
+  ))
+q9b_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "Log Sales on Log Price Regression with Instrument: 1991-2015")
+
+q9c1_tidy <- tidy(q9c1)
+q9c1_tidy <- q9c1_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "ln_tax_2012" = "2012 Tax (log)",
+  ))
+q9c1_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "First Stage Results from Instrument: 1991-2015")
+
+q9c2_tidy <- tidy(q9c2)
+q9c2_tidy <- q9c2_tidy %>%
+  mutate(term = recode(term,
+    "(Intercept)" = "Intercept",
+    "ln_tax_2012" = "2012 Tax (log)",
+  ))
+q9c2_tidy %>%
+  select(term, estimate, std.error, statistic, p.value) %>%
+  kable(format = "markdown", digits = c(0, 3, 3, 2, 3), caption = "Reduced Form Results from Instrument: 1991-2015")
+```
+
+\newpage
+\noindent Question 10. Compare your elasticity estimates from 1970-1990 versus those from 1991-2015. Are they different? If so, why?
+
+
+The elasticity estimators for 1991-2015 between the regular logistic regression and the logistic regression with the estimator are closer to each other than for the years 1970-1990. This means that the endogeneity controlled for by the tax instrument has less of an effect in the years 1991-2015. The elasticity of demand of the logistic regressions with the instruments in both sets of years are the same; they are both -0.763. This means that the effect of price on ciragrette sales are the same in both time periods.
